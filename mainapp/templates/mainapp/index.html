@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actuarial Assumption Review</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .header {
+            background-color: aqua;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        /* Main page: assumptions on left, AI on right */
+        .main-container {
+            display: flex;
+            gap: 50px;
+            align-items: flex-start;
+            padding: 30px;
+        }
+        /* LEFT SIDE */
+        .assumptions-section {
+            width: 400px;
+        }
+        .assumptions-section h2 {
+            margin-top: 0;
+        }
+        .requirements {
+            display: grid;
+            grid-template-columns: 250px 100px;
+            gap: 10px;
+            width: 400px;
+            align-items: center;
+        }
+        .requirements input[type="number"] {
+            width: 90px;
+        }
+        .requirements input[type="submit"],
+        .requirements button {
+            margin-top: 10px;
+        }
+        /* RIGHT SIDE */
+        .ai-results {
+            width: 700px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .ai-box {
+            display: flex;
+            flex-direction: column;
+        }
+        .ai-box h3 {
+            margin: 0 0 8px 0;
+        }
+        /* AI SCORE */
+        .score-box {
+            width: 700px;
+        }
+        .score {
+            width: 150px;
+            padding: 12px;
+            border: 1px solid #999;
+            background-color: #f2f2f2;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        /* AI REVIEW */
+        .review-box textarea {
+            width: 680px;
+            height: 220px;
+            resize: vertical;
+        }
+        /* SUGGESTIONS */
+        .suggestions-box textarea {
+            width: 680px;
+            height: 150px;
+            resize: vertical;
+        }
+        /* MESSAGE */
+        .message-box {
+            margin-top: 25px;
+        }
+        .message-box textarea {
+            width: 300px;
+            height: 80px;
+            resize: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        Actuarial Calculation Requirements
+    </div>
+    <div class="main-container">
+        <!-- ========================= -->
+        <!-- LEFT SIDE: ASSUMPTIONS -->
+        <!-- ========================= -->
+        <div class="assumptions-section">
+            <h2>Actuarial Assumptions</h2>
+            <form class="requirements" method="POST">
+                {% csrf_token %}
+                discount_rate:
+                <input type="number"
+                       name="discount_rate"
+                       min="0"
+                       value="{{discount_rate}}">
+                rate_wage_increase:
+                <input type="number"
+                       name="rate_wage_increase"
+                       min="0"
+                       value="{{rate_wage_increase}}">
+                rate_annuity_increase:
+                <input type="number"
+                       name="rate_annuity_increase"
+                       min="0"
+                       value="{{rate_annuity_increase}}">
+                productivity_rate:
+                <input type="number"
+                       name="productivity_rate"
+                       min="0"
+                       value="{{productivity_rate}}">
+                male_retirement_age:
+                <input type="number"
+                       name="male_retirement_age"
+                       min="0"
+                       value="{{male_retirement_age}}">
+                female_retirement_age:
+                <input type="number"
+                       name="female_retirement_age"
+                       min="0"
+                       value="{{female_retirement_age}}">
+                male_retiement_service:
+                <input type="number"
+                       name="male_retiement_service"
+                       min="0"
+                       value="{{male_retiement_service}}">
+                female_retirement_service:
+                <input type="number"
+                       name="female_retirement_service"
+                       min="0"
+                       value="{{female_retirement_service}}">
+                max_service_years:
+                <input type="number"
+                       name="max_service_years"
+                       min="0"
+                       value="{{max_service_years}}">
+                permium_rate_employer:
+                <input type="number"
+                       name="permium_rate_employer"
+                       min="0"
+                       value="{{permium_rate_employer}}">
+                permium_rate_employee:
+                <input type="number"
+                       name="permium_rate_employee"
+                       min="0"
+                       value="{{permium_rate_employee}}">
+                interst_rate:
+                <input type="number"
+                       name="interst_rate"
+                       min="0"
+                       value="{{interst_rate}}">
+                borrowing_rate:
+                <input type="number"
+                       name="borrowing_rate"
+                       min="0"
+                       value="{{borrowing_rate}}">
+                <input type="submit" value="Submit">
+                <button type="button" onclick="clearForm()">
+                    Clear
+                </button>
+            </form>
+            <!-- MESSAGE -->
+            <div class="message-box">
+                <h3>Message</h3>
+                <textarea readonly>{{response}}</textarea>
+            </div>
+        </div>
+        <!-- ========================= -->
+        <!-- RIGHT SIDE: AI RESULTS -->
+        <!-- ========================= -->
+        <div class="ai-results">
+            <!-- SCORE -->
+            <div class="ai-box score-box">
+                <h3>AI Score</h3>
+                <div class="score">
+                    {{ai_score}} / 10
+                </div>
+            </div>
+            <!-- REVIEW -->
+            <div class="ai-box review-box">
+                <h3>AI Review</h3>
+                <textarea readonly>{{ai_review}}</textarea>
+            </div>
+            <!-- SUGGESTIONS -->
+            <div class="ai-box suggestions-box">
+                <h3>Suggestions</h3>
+                <textarea readonly>{{ai_suggestions}}</textarea>
+            </div>
+        </div>
+    </div>
+    <script>
+        function clearForm() {
+            const form = document.querySelector(".requirements");
+            form.querySelectorAll("input").forEach(function(input) {
+                if (input.type !== "submit" &&
+                    input.type !== "button") {
+                    input.value = "";
+                }
+            });
+            document.querySelectorAll("textarea").forEach(function(textarea) {
+                textarea.value = "";
+            });
+        }
+    </script>
+</body>
+</html>
+

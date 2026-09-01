@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home page</title>
+</head>
+<script>
+function clearForm() {
+    const form = document.querySelector(".requirements");
+
+    form.querySelectorAll("input").forEach(function(input) {
+        if (input.type !== "submit" && input.type !== "button") {
+            input.value = "";
+        }
+    });
+
+    form.querySelector("textarea").value = "";
+}
+</script>
+<body>
+    <div style="background-color: aqua;height: 220px;text-align: center;">
+     actuarial calculation requirments
+    </div>
+    <div>
+        <form class="requirements" method="POST">
+    {% csrf_token %}
+            discount_rate:<input type="number" name="discount_rate" min="0" value={{discount_rate}}><br/>
+            rate_wage_increase: <input type="number" name="rate_wage_increase" min="0" value={{rate_wage_increase}} ><br/>
+            rate_annuity_increase:<input type="number" name="rate_annuity_increase" min="0" value={{rate_annuity_increase}}><br/>
+            productivity_rate:<input type="number" name="productivity_rate" min="0" value={{productivity_rate}}><br/>
+            male_retirement_age:<input type="number" name="male_retirement_age" min="0" value={{male_retirement_age}}><br/>
+            female_retirement_age<input type="number" name="female_retirement_age" min="0" value={{female_retirement_age}}><br/>
+            male_retiement_service<input type="number" name="male_retiement_service" min="0" value={{male_retiement_service}}><br/>
+            female_retirement_service:<input type="number" name="female_retirement_service" min="0" value={{female_retirement_service}}><br/>
+            max_service_years:<input type="number" name="max_service_years" min="0" value={{max_service_years}}><br/>
+            permium_rate_employer:<input type="number" name="permium_rate_employer" min="0"  value={{permium_rate_employer}}><br/>
+            permium_rate_employee:<input type="number" name="permium_rate_employee" min="0" value={{permium_rate_employee}}><br/>
+            interst_rate:<input type="number" name="interst_rate" min="0" value={{interst_rate}} ><br/>
+            borrowing_rate:<input type="number" name="borrowing_rate" min="0" value={{borrowing_rate}} ><br/>
+            <input type="submit" value="submit">
+            <button type="button" onclick="clearForm()">Clear</button>
+            <br/>
+               <textarea name="response" rows="20" cols="7"  >
+
+                {{response}}
+             </textarea>
+             <style> textarea{display:block}</style>
+    </div>
+        </form>
+        <style>
+              .requirements {
+                             display: grid;
+                             grid-template-columns: 250px 70px;
+                             gap:10px;
+                             width: 400px;
+                             align-items: center;
+                             
+                            } 
+        </style>
+      
+</body>
+</html>
+
+
