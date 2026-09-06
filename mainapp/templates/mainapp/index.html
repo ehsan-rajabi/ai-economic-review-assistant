@@ -85,6 +85,12 @@
             height: 150px;
             resize: vertical;
         }
+        /* COMPARISON */
+        .comparison-box textarea {
+          width: 680px;
+          height: 150px;
+         resize: vertical;
+}
         /* MESSAGE */
         .message-box {
             margin-top: 25px;
@@ -174,7 +180,7 @@
                        min="0"
                        value="{{borrowing_rate}}">
                 <input type="submit" value="Submit">
-                <button type="button" onclick="clearForm()">
+                <button type="button" id="clear-button">
                     Clear
                 </button>
             </form>
@@ -204,23 +210,43 @@
             <div class="ai-box suggestions-box">
                 <h3>Suggestions</h3>
                 <textarea readonly>{{ai_suggestions}}</textarea>
+            <div class="ai-box comparison-box">
+              <h3>Comparison with Previous Assessment</h3>
+              <textarea readonly>{{ai_comparison}}</textarea>
+            </div>
             </div>
         </div>
     </div>
     <script>
-        function clearForm() {
-            const form = document.querySelector(".requirements");
-            form.querySelectorAll("input").forEach(function(input) {
-                if (input.type !== "submit" &&
-                    input.type !== "button") {
-                    input.value = "";
-                }
-            });
-            document.querySelectorAll("textarea").forEach(function(textarea) {
-                textarea.value = "";
-            });
-        }
-    </script>
+    const form = document.querySelector(".requirements");
+    const clearButton = document.getElementById("clear-button");
+
+    form.addEventListener("submit", function () {
+
+        const textareas = document.querySelectorAll("textarea");
+
+        // Show waiting message immediately
+        textareas.forEach(function(textarea) {
+            textarea.value = "Please wait... AI will review your assumptions.";
+        });
+
+    });
+
+
+    clearButton.addEventListener("click", function () {
+
+        // Clear only assumption inputs
+        form.querySelectorAll('input[type="number"]').forEach(function(input) {
+            input.value = "";
+        });
+
+        // Clear textareas
+        document.querySelectorAll("textarea").forEach(function(textarea) {
+            textarea.value = "";
+        });
+
+    });
+</script>
 </body>
 </html>
 

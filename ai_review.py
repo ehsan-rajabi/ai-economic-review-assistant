@@ -1,13 +1,93 @@
 
-from openai import OpenAI
 import os
 from dotenv import load_dotenv
-import json
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field
+
 load_dotenv()
-client =OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
+class AssumptionReview(BaseModel):
+    review: str = Field(
+        description="A concise 150-200 word actuarial review."
+    )
 
+    overall_score: float = Field(
+        description="Overall score from 0 to 10.",
+        ge=0,
+        le=10
+    )
+
+    suggestions: str = Field(
+        description="Practical suggestions for improving the assumptions."
+    )
+
+    comparison: str = Field(
+        description=(
+            "Explain whether the new assumptions are better, worse, "
+            "or similar to the previous assumptions and why. "
+            "If there are no previous assumptions, state that this "
+            "is the first assessment and there is nothing to compare."
+        )
+    )
+
+
+model = ChatOpenAI(
+    model="gpt-5.6-luna",
+    reasoning_effort="low",
+    api_key=os.getenv("OPENAI_API_KEY")
+)
+
+structured_model = model.with_structured_output(AssumptionReview)
+
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", """
+You are an actuarial expert specializing in Iranian pension funds.
+
+Your task is to review the NEW economic assumptions.
+
+NEW ASSUMPTIONS:
+
+Discount rate: {discount_rate}%
+Wage increase rate: {rate_wage_increase}%
+Annuity increase rate: {rate_annuity_increase}%
+Productivity rate: {productivity_rate}%
+Interest rate: {interest_rate}%
+Borrowing rate: {borrowing_rate}%
+
+PREVIOUS ASSESSMENT:
+
+{previous_information}
+
+Assess the NEW assumptions using:
+
+- Iranian historical and current economic conditions
+- Plausible future Iranian economic trends
+- Credibility and justification
+- Internal consistency between the assumptions
+- Suitability for pension actuarial valuation
+
+If previous assumptions are provided, compare the NEW assumptions
+with the PREVIOUS assumptions and previous score.
+
+Explain whether the NEW assumptions are better, worse, or similar
+to the previous assumptions and explain the actuarial/economic
+reasons.
+
+If this is the FIRST assessment and no previous assumptions exist,
+do not attempt a comparison. State clearly that this is the first
+assessment.
+
+The review should be approximately 150-200 words.
+""")
+])
+
+
+chain = prompt | structured_model
+previous_assumptions = None
+previous_score = None
 
 def review_assumptions(
     discount_rate,
@@ -18,55 +98,54 @@ def review_assumptions(
     borrowing_rate,
 ):
 
-    prompt = f"""
-You are an actuarial expert specializing in Iranian pension funds.
+    global previous_assumptions, previous_score
 
-Review ONLY these six economic assumptions:
+    if previous_assumptions is None:
+        previous_information = """
+There are no previous assumptions.
+This is the first assessment.
+There is no previous score.
+"""
+    else:
+        previous_information = f"""
+Previous assumptions:
 
-Discount rate: {discount_rate}%
-Wage increase rate: {rate_wage_increase}%
-Annuity increase rate: {rate_annuity_increase}%
-Productivity rate: {productivity_rate}%
-Interest rate: {interst_rate}%
-Borrowing rate: {borrowing_rate}%
+Discount rate: {previous_assumptions["discount_rate"]}%
+Wage increase rate: {previous_assumptions["rate_wage_increase"]}%
+Annuity increase rate: {previous_assumptions["rate_annuity_increase"]}%
+Productivity rate: {previous_assumptions["productivity_rate"]}%
+Interest rate: {previous_assumptions["interest_rate"]}%
+Borrowing rate: {previous_assumptions["borrowing_rate"]}%
 
-Assess the assumptions using:
-- Iranian historical and current economic conditions
-- Plausible future Iranian economic trends
-- Credibility and justification
-- Internal consistency between the assumptions
-- Suitability for pension actuarial valuation
-
-Return a concise response.
-
-The "review" should be ONE paragraph of approximately 150-200 words.
-
-The "suggestions" should contain practical suggestions for improving
-the assumptions, including better values or reasonable ranges where
-appropriate.
-
-The "overall_score" must be a number from 0 to 10.
-
-Return ONLY valid JSON in exactly this structure:
-
-{{
-    "review": "One concise paragraph explaining the assessment.",
-    "overall_score": 0,
-    "suggestions": "Practical suggestions for improving the assumptions."
-}}
+Previous overall score: {previous_score}
 """
 
-    response = client.responses.create(
-        model="gpt-5.6-luna",
-        reasoning={"effort": "low"},
-        max_output_tokens=1000,
-        input=prompt
-    )
+    result = chain.invoke({
+        "previous_information": previous_information,
+        "discount_rate": discount_rate,
+        "rate_wage_increase": rate_wage_increase,
+        "rate_annuity_increase": rate_annuity_increase,
+        "productivity_rate": productivity_rate,
+        "interest_rate": interst_rate,
+        "borrowing_rate": borrowing_rate,
+    })
 
-    result = json.loads(response.output_text)
+    # Save the current assessment for the NEXT request
+    previous_assumptions = {
+        "discount_rate": discount_rate,
+        "rate_wage_increase": rate_wage_increase,
+        "rate_annuity_increase": rate_annuity_increase,
+        "productivity_rate": productivity_rate,
+        "interest_rate": interst_rate,
+        "borrowing_rate": borrowing_rate,
+    }
+
+    previous_score = result.overall_score
 
     return {
-        "review": result["review"],
-        "score": result["overall_score"],
-        "suggestions": result["suggestions"],
+        "review": result.review,
+        "score": result.overall_score,
+        "suggestions": result.suggestions,
+        "comparison": result.comparison,
     }
+

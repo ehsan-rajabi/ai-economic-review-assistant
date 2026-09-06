@@ -3,63 +3,504 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home page</title>
-</head>
-<script>
-function clearForm() {
-    const form = document.querySelector(".requirements");
 
-    form.querySelectorAll("input").forEach(function(input) {
-        if (input.type !== "submit" && input.type !== "button") {
-            input.value = "";
+    <title>Actuarial Calculation Requirements</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
         }
+
+        .header {
+            background-color: aqua;
+            height: 220px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .form-container {
+            padding: 30px;
+        }
+
+        .requirements {
+            display: grid;
+            grid-template-columns: 250px 200px;
+            gap: 10px;
+            width: 500px;
+            align-items: center;
+        }
+
+        .requirements input[type="number"] {
+            padding: 7px;
+            font-size: 15px;
+        }
+
+        .buttons {
+            grid-column: 1 / 3;
+            margin-top: 15px;
+        }
+
+        .buttons input,
+        .buttons button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .buttons input:disabled,
+        .buttons button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .response-container {
+            grid-column: 1 / 3;
+            margin-top: 20px;
+        }
+
+        .response-container label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        #response {
+            width: 700px;
+            max-width: 100%;
+            height: 250px;
+            padding: 12px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    Actuarial Calculation Requirements
+</div>
+
+<div class="form-container">
+
+    <form
+        id="requirementsForm"
+        class="requirements"
+        method="POST"
+    >
+
+        {% csrf_token %}
+
+        <label>Discount Rate:</label>
+        <input
+            type="number"
+            name="discount_rate"
+            min="0"
+            value="{{ discount_rate }}"
+        >
+
+        <label>Rate Wage Increase:</label>
+        <input
+            type="number"
+            name="rate_wage_increase"
+            min="0"
+            value="{{ rate_wage_increase }}"
+        >
+
+        <label>Rate Annuity Increase:</label>
+        <input
+            type="number"
+            name="rate_annuity_increase"
+            min="0"
+            value="{{ rate_annuity_increase }}"
+        >
+
+        <label>Productivity Rate:</label>
+        <input
+            type="number"
+            name="productivity_rate"
+            min="0"
+            value="{{ productivity_rate }}"
+        >
+
+        <label>Male Retirement Age:</label>
+        <input
+            type="number"
+            name="male_retirement_age"
+            min="0"
+            value="{{ male_retirement_age }}"
+        >
+
+        <label>Female Retirement Age:</label>
+        <input
+            type="number"
+            name="female_retirement_age"
+            min="0"
+            value="{{ female_retirement_age }}"
+        >
+
+        <label>Male Retirement Service:</label>
+        <input
+            type="number"
+            name="male_retiement_service"
+            min="0"
+            value="{{ male_retiement_service }}"
+        >
+
+        <label>Female Retirement Service:</label>
+        <input
+            type="number"
+            name="female_retirement_service"
+            min="0"
+            value="{{ female_retirement_service }}"
+        >
+
+        <label>Maximum Service Years:</label>
+        <input
+            type="number"
+            name="max_service_years"
+            min="0"
+            value="{{ max_service_years }}"
+        >
+
+        <label>Premium Rate Employer:</label>
+        <input
+            type="number"
+            name="permium_rate_employer"
+            min="0"
+            value="{{ permium_rate_employer }}"
+        >
+
+        <label>Premium Rate Employee:</label>
+        <input
+            type="number"
+            name="permium_rate_employee"
+            min="0"
+            value="{{ permium_rate_employee }}"
+        >
+
+        <label>Interest Rate:</label>
+        <input
+            type="number"
+            name="interst_rate"
+            min="0"
+            value="{{ interst_rate }}"
+        >
+
+        <label>Borrowing Rate:</label>
+        <input
+            type="number"
+            name="borrowing_rate"
+            min="0"
+            value="{{ borrowing_rate }}"
+        >
+
+        <div class="buttons">
+
+            <input
+                type="submit"
+                id="submitButton"
+                value="Submit"
+            >
+
+            <button
+                type="button"
+                id="clearButton"
+            >
+                Clear
+            </button>
+
+        </div>
+
+        <div class="response-container">
+
+            <label for="response">
+                AI Response:
+            </label>
+
+            <textarea
+                id="response"
+                readonly
+            >{{ response }}</textarea>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+    const form = document.getElementById("requirementsForm");
+
+    const responseBox = document.getElementById("response");
+
+    const submitButton = document.getElementById("submitButton");
+
+    const clearButton = document.getElementById("clearButton");
+
+
+    /*
+     * SUBMIT
+     */
+
+    form.addEventListener("submit", function(event) {
+
+        event.preventDefault();
+
+        console.log("SUBMIT BUTTON CLICKED");
+
+
+        /*
+         * STEP 1
+         *
+         * Show the message immediately.
+         */
+
+        responseBox.value =
+            "PLEASE WAIT...\n\n" +
+            "The AI is reviewing your assumptions.";
+
+
+        /*
+         * STEP 2
+         *
+         * Disable buttons.
+         */
+
+        submitButton.disabled = true;
+
+        submitButton.value = "Please wait...";
+
+        clearButton.disabled = true;
+
+
+        /*
+         * STEP 3
+         *
+         * Give the browser time to display
+         * the PLEASE WAIT message.
+         */
+
+        setTimeout(function() {
+
+            console.log("Starting AI request...");
+
+
+            /*
+             * Collect the form data.
+             *
+             * This includes the CSRF token.
+             */
+
+            const formData = new FormData(form);
+
+
+            /*
+             * STEP 4
+             *
+             * Send the form to Django.
+             */
+
+            fetch(
+                form.action || window.location.href,
+                {
+                    method: "POST",
+
+                    body: formData,
+
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                }
+            )
+
+            .then(function(response) {
+
+                console.log(
+                    "HTTP status:",
+                    response.status
+                );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        "Server returned HTTP " +
+                        response.status
+                    );
+
+                }
+
+
+                return response.json();
+
+            })
+
+            .then(function(data) {
+
+                console.log(
+                    "Django response:",
+                    data
+                );
+
+
+                /*
+                 * STEP 5
+                 *
+                 * Display the final result.
+                 */
+
+                if (data.success) {
+
+                    responseBox.value =
+                        data.response ||
+                        "AI review completed.";
+
+
+                    /*
+                     * Add score if returned.
+                     */
+
+                    if (data.score !== undefined) {
+
+                        responseBox.value +=
+                            "\n\nAI Score: " +
+                            data.score +
+                            " / 10";
+
+                    }
+
+
+                    /*
+                     * Add AI review if returned.
+                     */
+
+                    if (data.review) {
+
+                        responseBox.value +=
+                            "\n\nAI Review:\n" +
+                            data.review;
+
+                    }
+
+
+                    /*
+                     * Add suggestions if returned.
+                     */
+
+                    if (data.suggestions) {
+
+                        responseBox.value +=
+                            "\n\nSuggestions:\n" +
+                            data.suggestions;
+
+                    }
+
+
+                    /*
+                     * Add comparison if returned.
+                     */
+
+                    if (data.comparison) {
+
+                        responseBox.value +=
+                            "\n\nComparison:\n" +
+                            data.comparison;
+
+                    }
+
+                }
+
+                else {
+
+                    responseBox.value =
+                        data.response ||
+                        "There was a problem with your assumptions.";
+
+                }
+
+            })
+
+            .catch(function(error) {
+
+                console.error(
+                    "Request error:",
+                    error
+                );
+
+
+                responseBox.value =
+                    "ERROR\n\n" +
+                    error.message;
+
+            })
+
+            .finally(function() {
+
+                /*
+                 * STEP 6
+                 *
+                 * Enable buttons again.
+                 */
+
+                submitButton.disabled = false;
+
+                submitButton.value = "Submit";
+
+                clearButton.disabled = false;
+
+            });
+
+        }, 300);
+
     });
 
-    form.querySelector("textarea").value = "";
-}
-</script>
-<body>
-    <div style="background-color: aqua;height: 220px;text-align: center;">
-     actuarial calculation requirments
-    </div>
-    <div>
-        <form class="requirements" method="POST">
-    {% csrf_token %}
-            discount_rate:<input type="number" name="discount_rate" min="0" value={{discount_rate}}><br/>
-            rate_wage_increase: <input type="number" name="rate_wage_increase" min="0" value={{rate_wage_increase}} ><br/>
-            rate_annuity_increase:<input type="number" name="rate_annuity_increase" min="0" value={{rate_annuity_increase}}><br/>
-            productivity_rate:<input type="number" name="productivity_rate" min="0" value={{productivity_rate}}><br/>
-            male_retirement_age:<input type="number" name="male_retirement_age" min="0" value={{male_retirement_age}}><br/>
-            female_retirement_age<input type="number" name="female_retirement_age" min="0" value={{female_retirement_age}}><br/>
-            male_retiement_service<input type="number" name="male_retiement_service" min="0" value={{male_retiement_service}}><br/>
-            female_retirement_service:<input type="number" name="female_retirement_service" min="0" value={{female_retirement_service}}><br/>
-            max_service_years:<input type="number" name="max_service_years" min="0" value={{max_service_years}}><br/>
-            permium_rate_employer:<input type="number" name="permium_rate_employer" min="0"  value={{permium_rate_employer}}><br/>
-            permium_rate_employee:<input type="number" name="permium_rate_employee" min="0" value={{permium_rate_employee}}><br/>
-            interst_rate:<input type="number" name="interst_rate" min="0" value={{interst_rate}} ><br/>
-            borrowing_rate:<input type="number" name="borrowing_rate" min="0" value={{borrowing_rate}} ><br/>
-            <input type="submit" value="submit">
-            <button type="button" onclick="clearForm()">Clear</button>
-            <br/>
-               <textarea name="response" rows="20" cols="7"  >
 
-                {{response}}
-             </textarea>
-             <style> textarea{display:block}</style>
-    </div>
-        </form>
-        <style>
-              .requirements {
-                             display: grid;
-                             grid-template-columns: 250px 70px;
-                             gap:10px;
-                             width: 400px;
-                             align-items: center;
-                             
-                            } 
-        </style>
-      
+    /*
+     * CLEAR
+     */
+
+    clearButton.addEventListener("click", function() {
+
+        /*
+         * IMPORTANT:
+         *
+         * Only clear number inputs.
+         *
+         * We must NOT clear the hidden
+         * Django CSRF input.
+         */
+
+        const numberInputs =
+            form.querySelectorAll(
+                'input[type="number"]'
+            );
+
+
+        numberInputs.forEach(function(input) {
+
+            input.value = "";
+
+        });
+
+
+        /*
+         * Clear AI response.
+         */
+
+        responseBox.value = "";
+
+    });
+
+</script>
+
 </body>
 </html>
-
-
