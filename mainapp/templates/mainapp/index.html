@@ -18,6 +18,16 @@
             font-size: 28px;
             font-weight: bold;
         }
+        .logout-form {
+                      position: absolute;
+                      right: 30px;
+                      top: 30px;
+                      }
+
+         .logout-button {
+                         padding: 8px 15px;
+                         cursor: pointer;
+                        }
         /* Main page: assumptions on left, AI on right */
         .main-container {
             display: flex;
@@ -104,8 +114,15 @@
 </head>
 <body>
     <div class="header">
-        Actuarial Calculation Requirements
-    </div>
+    Actuarial Calculation Requirements
+
+    {% if user.is_authenticated %}
+    <form class="logout-form" method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button class="logout-button" type="submit">Logout</button>
+    </form>
+    {% endif %}
+</div>
     <div class="main-container">
         <!-- ========================= -->
         <!-- LEFT SIDE: ASSUMPTIONS -->

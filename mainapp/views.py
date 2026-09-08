@@ -1,8 +1,8 @@
 from django.shortcuts import render, HttpResponse
 from django.http import JsonResponse
 from ai_review import review_assumptions
-
-
+from django.contrib.auth.decorators import login_required
+@login_required
 def home(request):
     d = {}
 
