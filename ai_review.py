@@ -1,12 +1,11 @@
-
 import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
+from rag.rag import retrieve_rag_context
 
 load_dotenv()
-
 
 class AssumptionReview(BaseModel):
     review: str = Field(
@@ -32,18 +31,16 @@ class AssumptionReview(BaseModel):
         )
     )
 
-
 model = ChatOpenAI(
-    model="gpt-5.6-luna",
-    reasoning_effort="low",
-    api_key=os.getenv("OPENAI_API_KEY")
+model="gpt-5.6-luna",
+reasoning_effort="low",
+api_key=os.getenv("OPENAI_API_KEY")
 )
 
 structured_model = model.with_structured_output(AssumptionReview)
 
-
 prompt = ChatPromptTemplate.from_messages([
-    ("system", """
+("system", """
 You are an actuarial expert specializing in Iranian pension funds.
 
 Your task is to review the NEW economic assumptions.
@@ -61,13 +58,36 @@ PREVIOUS ASSESSMENT:
 
 {previous_information}
 
+REFERENCE INFORMATION FROM THE ACTUARIAL REPORT:
+
+{rag_context}
+
+Use the reference information from the actuarial report
+as evidence when it is relevant to the review.
+
+Do not assume that information in the reference material
+is automatically correct for the NEW assessment. Evaluate
+it together with the NEW assumptions and current economic
+conditions.
+
+If the reference information does not contain relevant
+information for a particular issue, do not invent information
+from the report.
+
 Assess the NEW assumptions using:
 
-- Iranian historical and current economic conditions
-- Plausible future Iranian economic trends
-- Credibility and justification
-- Internal consistency between the assumptions
-- Suitability for pension actuarial valuation
+* Iranian historical and current economic conditions
+* Plausible future Iranian economic trends
+* Credibility and justification
+* Internal consistency between the assumptions
+* Suitability for pension actuarial valuation
+* Relevant evidence from the actuarial report
+* Relevant sensitivity analysis from the actuarial report
+
+Pay particular attention to numerical evidence in the report.
+
+Use sensitivity analysis when it is relevant to explain
+how changes in assumptions affect actuarial liabilities.
 
 If previous assumptions are provided, compare the NEW assumptions
 with the PREVIOUS assumptions and previous score.
@@ -84,8 +104,8 @@ The review should be approximately 150-200 words.
 """)
 ])
 
-
 chain = prompt | structured_model
+
 previous_assumptions = None
 previous_score = None
 
@@ -115,13 +135,23 @@ Wage increase rate: {previous_assumptions["rate_wage_increase"]}%
 Annuity increase rate: {previous_assumptions["rate_annuity_increase"]}%
 Productivity rate: {previous_assumptions["productivity_rate"]}%
 Interest rate: {previous_assumptions["interest_rate"]}%
-Borrowing rate: {previous_assumptions["borrowing_rate"]}%
+Borrowing rate: {previous_assumptions["borrowing_rate"]}
 
 Previous overall score: {previous_score}
 """
 
+    rag_context = retrieve_rag_context(
+        discount_rate=discount_rate,
+        rate_wage_increase=rate_wage_increase,
+        rate_annuity_increase=rate_annuity_increase,
+        productivity_rate=productivity_rate,
+        interest_rate=interst_rate,
+        borrowing_rate=borrowing_rate,
+    )
+
     result = chain.invoke({
         "previous_information": previous_information,
+        "rag_context": rag_context,
         "discount_rate": discount_rate,
         "rate_wage_increase": rate_wage_increase,
         "rate_annuity_increase": rate_annuity_increase,
@@ -148,4 +178,3 @@ Previous overall score: {previous_score}
         "suggestions": result.suggestions,
         "comparison": result.comparison,
     }
-
