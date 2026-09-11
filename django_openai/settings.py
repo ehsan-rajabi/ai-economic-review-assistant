@@ -25,8 +25,8 @@ SECRET_KEY = 'django-insecure-2(5(5cis)%x(g(4%lb%&88r$(^^e(j3t%91@n-p9^(!4d8gc4c
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0','actuarial-ai-app.azurewebsites.net']
+CSRF_TRUSTED_ORIGINS = ['https://actuarial-ai-app.azurewebsites.net',]
 # Application definition
 
 INSTALLED_APPS = [
