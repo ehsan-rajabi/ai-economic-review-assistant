@@ -65,10 +65,6 @@ module appService 'appservice.bicep' = {
     appServicePlanName: appServicePlanName
     location: location
     containerImage: containerImage
-    sqlServer: '${sqlServerName}${environment().suffixes.sqlServerHostname}'
-    sqlDatabase: sqlDatabaseName
-    sqlUser: sqlAdminUsername
-    sqlPassword: sqlAdminPassword
   }
 }
 module acrPull 'acr-pull.bicep' = {
