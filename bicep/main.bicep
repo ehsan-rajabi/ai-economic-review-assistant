@@ -14,8 +14,22 @@ param appServicePlanName string = 'actuarial-ai-plan'
 
 @description('Name of the Web App')
 param appName string = 'actuarial-ai-app'
+
 @description('Container image to run')
-param containerImage string = 'actuarialaiacr.azurecr.io/actuarial-ai:latest'
+param containerImage string = 'actuarialaiacr.azurecr.io/actuarial-ai:v3'
+
+@description('Name of the Azure SQL logical server')
+param sqlServerName string = 'actuarial-ai-sql'
+
+@description('Name of the Azure SQL database')
+param sqlDatabaseName string = 'actuarial'
+
+@description('Administrator username for Azure SQL')
+param sqlAdminUsername string = 'actuarialadmin'
+
+@description('Administrator password for Azure SQL')
+@secure()
+param sqlAdminPassword string
 
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: resourceGroupName
@@ -51,9 +65,12 @@ module appService 'appservice.bicep' = {
     appServicePlanName: appServicePlanName
     location: location
     containerImage: containerImage
+    sqlServer: '${sqlServerName}${environment().suffixes.sqlServerHostname}'
+    sqlDatabase: sqlDatabaseName
+    sqlUser: sqlAdminUsername
+    sqlPassword: sqlAdminPassword
   }
 }
-
 module acrPull 'acr-pull.bicep' = {
   name: 'acrPullDeployment'
   scope: resourceGroup
@@ -62,9 +79,23 @@ module acrPull 'acr-pull.bicep' = {
     principalId: appService.outputs.webAppPrincipalId
   }
 }
+
+module sql 'sql.bicep' = {
+  name: 'sqlDeployment'
+  scope: resourceGroup
+  params: {
+    sqlServerName: sqlServerName
+    sqlDatabaseName: sqlDatabaseName
+    sqlAdminUsername: sqlAdminUsername
+    sqlAdminPassword: sqlAdminPassword
+    location: location
+  }
+}
 output resourceGroupName string = resourceGroup.name
 output resourceGroupLocation string = resourceGroup.location
 output containerRegistryName string = acr.outputs.containerRegistryName
 output appServicePlanName string = appServicePlan.outputs.appServicePlanName
 output appName string = appService.outputs.webAppName
 output appPrincipalId string = appService.outputs.webAppPrincipalId
+output sqlServerName string = sql.outputs.sqlServerName
+output sqlDatabaseName string = sql.outputs.sqlDatabaseName

@@ -12,6 +12,19 @@ param location string
 @description('Container image to run')
 param containerImage string
 
+@description('Azure SQL server hostname')
+param sqlServer string
+
+@description('Azure SQL database name')
+param sqlDatabase string
+
+@description('Azure SQL administrator username')
+param sqlUser string
+
+@description('Azure SQL administrator password')
+@secure()
+param sqlPassword string
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2025-03-01' existing = {
   name: appServicePlanName
 }
@@ -33,6 +46,26 @@ resource webApp 'Microsoft.Web/sites@2025-03-01' = {
         {
           name: 'WEBSITES_PORT'
           value: '8000'
+        }
+        {
+          name: 'SQL_SERVER'
+          value: sqlServer
+        }
+        {
+          name: 'SQL_DATABASE'
+          value: sqlDatabase
+        }
+        {
+          name: 'SQL_USER'
+          value: sqlUser
+        }
+        {
+          name: 'SQL_PASSWORD'
+          value: sqlPassword
+        }
+        {
+          name: 'SQL_PORT'
+          value: '1433'
         }
       ]
     }

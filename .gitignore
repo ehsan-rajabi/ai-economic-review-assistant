@@ -6,3 +6,4 @@ db.sqlite3
 .DS_Store
 rag/chroma_db/
 bicep/main.json
+bicep/sql.parameters.json
