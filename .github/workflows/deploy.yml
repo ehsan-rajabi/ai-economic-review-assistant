@@ -1,0 +1,89 @@
+name: Deploy Actuarial AI
+
+on:
+  push:
+    branches:
+      - azure-sql
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AZURE_RESOURCE_GROUP: actuarial-ai-rg
+  AZURE_LOCATION: australiaeast
+  ACR_NAME: actuarialaiacr
+  APP_NAME: actuarial-ai-app
+  IMAGE_NAME: actuarial-ai
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push Docker image
+        run: |
+          az acr login --name "$ACR_NAME"
+
+          IMAGE_TAG="${GITHUB_SHA}"
+
+          docker build \
+            --platform linux/amd64 \
+            -t "$ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG" \
+            .
+
+          docker push "$ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG"
+
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+
+      - name: Deploy Azure infrastructure with Bicep
+        env:
+          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+        run: |
+          az deployment sub create \
+            --location "$AZURE_LOCATION" \
+            --template-file bicep/main.bicep \
+            --parameters \
+              resourceGroupName="$AZURE_RESOURCE_GROUP" \
+              containerImage="$ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG" \
+              sqlAdminPassword="$SQL_ADMIN_PASSWORD"
+
+      - name: Configure App Service settings
+        env:
+          SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DJANGO_SUPERUSER_USERNAME: ${{ secrets.DJANGO_SUPERUSER_USERNAME }}
+          DJANGO_SUPERUSER_EMAIL: ${{ secrets.DJANGO_SUPERUSER_EMAIL }}
+          DJANGO_SUPERUSER_PASSWORD: ${{ secrets.DJANGO_SUPERUSER_PASSWORD }}
+        run: |
+          az webapp config appsettings set \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$APP_NAME" \
+            --settings \
+              WEBSITES_PORT=8000 \
+              SQL_SERVER=actuarial-ai-sql.database.windows.net \
+              SQL_DATABASE=actuarial \
+              SQL_USER=actuarialadmin \
+              SQL_PASSWORD="$SQL_ADMIN_PASSWORD" \
+              SQL_PORT=1433 \
+              OPENAI_API_KEY="$OPENAI_API_KEY" \
+              DJANGO_SUPERUSER_USERNAME="$DJANGO_SUPERUSER_USERNAME" \
+              DJANGO_SUPERUSER_EMAIL="$DJANGO_SUPERUSER_EMAIL" \
+              DJANGO_SUPERUSER_PASSWORD="$DJANGO_SUPERUSER_PASSWORD"
+
+      - name: Restart App Service
+        run: |
+          az webapp restart \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$APP_NAME"
+
