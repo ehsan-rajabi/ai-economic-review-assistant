@@ -50,11 +50,10 @@ jobs:
         env:
           SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
         run: |
-          az deployment sub create \
-            --location "$AZURE_LOCATION" \
+          az deployment group create \
+            --resource-group "$AZURE_RESOURCE_GROUP" \
             --template-file bicep/main.bicep \
             --parameters \
-              resourceGroupName="$AZURE_RESOURCE_GROUP" \
               containerImage="$ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG" \
               sqlAdminPassword="$SQL_ADMIN_PASSWORD"
 

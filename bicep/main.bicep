@@ -1,7 +1,4 @@
-targetScope = 'subscription'
-
-@description('Name of the resource group for the Actuarial AI application')
-param resourceGroupName string = 'actuarial-ai-rg'
+targetScope = 'resourceGroup'
 
 @description('Azure region for the resources')
 param location string = 'australiaeast'
@@ -31,18 +28,8 @@ param sqlAdminUsername string = 'actuarialadmin'
 @secure()
 param sqlAdminPassword string
 
-resource resourceGroup 'Microsoft.Resources/resourceGroups@2025-04-01' = {
-  name: resourceGroupName
-  location: location
-  tags: {
-    project: 'actuarial-ai'
-    environment: 'development'
-  }
-}
-
 module acr 'acr.bicep' = {
   name: 'acrDeployment'
-  scope: resourceGroup
   params: {
     acrName: acrName
     location: location
@@ -51,15 +38,14 @@ module acr 'acr.bicep' = {
 
 module appServicePlan 'appservice-plan.bicep' = {
   name: 'appServicePlanDeployment'
-  scope: resourceGroup
   params: {
     planName: appServicePlanName
     location: location
   }
 }
+
 module appService 'appservice.bicep' = {
   name: 'appServiceDeployment'
-  scope: resourceGroup
   params: {
     appName: appName
     appServicePlanName: appServicePlanName
@@ -67,9 +53,9 @@ module appService 'appservice.bicep' = {
     containerImage: containerImage
   }
 }
+
 module acrPull 'acr-pull.bicep' = {
   name: 'acrPullDeployment'
-  scope: resourceGroup
   params: {
     acrName: acrName
     principalId: appService.outputs.webAppPrincipalId
@@ -78,7 +64,6 @@ module acrPull 'acr-pull.bicep' = {
 
 module sql 'sql.bicep' = {
   name: 'sqlDeployment'
-  scope: resourceGroup
   params: {
     sqlServerName: sqlServerName
     sqlDatabaseName: sqlDatabaseName
@@ -87,8 +72,9 @@ module sql 'sql.bicep' = {
     location: location
   }
 }
-output resourceGroupName string = resourceGroup.name
-output resourceGroupLocation string = resourceGroup.location
+
+output resourceGroupName string = resourceGroup().name
+output resourceGroupLocation string = resourceGroup().location
 output containerRegistryName string = acr.outputs.containerRegistryName
 output appServicePlanName string = appServicePlan.outputs.appServicePlanName
 output appName string = appService.outputs.webAppName
